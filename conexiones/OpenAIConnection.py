@@ -1,25 +1,28 @@
-from typing import List
-
-from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_core.messages import BaseMessage
+from langchain.indexes import VectorstoreIndexCreator
+from langchain.memory import ConversationBufferMemory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables import RunnableWithMessageHistory
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain.chains import ConversationalRetrievalChain
+from langchain_community.vectorstores import FAISS
 
 
 class OpenAIConnection:
 
-    def __init__(self, api_key):
-        self.llm = ChatOpenAI(api_key=api_key, temperature=0.7, max_tokens=150)
+    def __init__(self, api_key, vectorStore):
+        self.llm = ChatOpenAI(api_key=api_key, temperature=0.7)
+        self.vectorStore = vectorStore
 
-    def generarPalabraConMemoria(self,prompt):
+    def lecturaPDF(self,prompt):
+        # Configurar la memoria de la conversación
+        memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
-        promptAI = ChatPromptTemplate.from_messages([
-            ("system", "Eres un asistente útil que responde preguntas de manera clara y concisa."),
-            ("human", f"{prompt}"),
-        ])
-        humanMessage = promptAI.messages[1].prompt.template
-        systemMessage = promptAI.messages[0].prompt.template
-        return self.llm.invoke([systemMessage, humanMessage])
+        # Esto sirve para que el modelo siga esto pasos, es decir una cadena
+        qa_chain = ConversationalRetrievalChain.from_llm(
+            llm=self.llm,
+            retriever=self.vectorStore.as_retriever(),
+            memory=memory
+        )
+
+        return qa_chain.invoke({"question": prompt, "chat_history": memory.buffer})
 
 

@@ -2,4 +2,11 @@
 /shelf/
 /workspace.xml
 
-.streamlit
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+.venv/
+
+.streamlit/secrets.toml:1
